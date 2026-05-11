@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>City Life Clicker - Emoji Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'VT323', monospace; background: #111; color: white; }
+        canvas { display: block; }
+        
+        /* Головний заголовок гри зі скріншоту */
+        #game-title {
+            position: fixed;
+            top: 20px;
+            right: 40px;
+            text-align: right;
+            z-index: 50;
+            text-shadow: 2px 2px 0px #000;
+            pointer-events: none;
+            display: none; /* Покажемо після входу */
+        }
+        #game-title h1 { margin: 0; color: #fffadd; font-size: 36px; letter-spacing: 2px; }
+        #game-title p { margin: 5px 0 0 0; color: #ffcc00; font-size: 20px; }
+
+        /* Панель потреб (Дачики) */
+        #stats-bars {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            z-index: 60;
+            border: 4px solid #333;
+            display: none;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.8);
+        }
+        .stat-row { margin-bottom: 8px; font-size: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px;}
+        .bar-bg { width: 150px; height: 16px; background: #333; border: 2px solid #000; position: relative; }
+        .bar-fill { height: 100%; transition: width 0.3s; }
+
+        /* Банер локації */
+        #location-banner {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111;
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 20px;
+            display: none;
+            z-index: 50;
+            border: 4px solid #fff;
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+        #location-banner button {
+            background: #4CAF50; border: 2px solid #fff; font-family: 'VT323', monospace; font-size: 20px; border-radius: 4px;
+        }
+
+        /* Стиль Телефону */
+        #phone {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 260px;
+            height: 480px;
+            background: #1a1a24;
+            border: 8px solid #2a2a35;
+            border-radius: 24px;
+            color: white;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 100;
+            box-shadow: -10px 10px 20px rgba(0,0,0,0.8);
+        }
+        /* Чубчик камери телефону */
+        #phone::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 80px; height: 20px;
+            background: #2a2a35;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            z-index: 10;
+        }
+
+        #phone-screen { flex: 1; padding: 25px 15px 15px 15px; overflow-y: auto; display: none; font-family: sans-serif;}
+        #phone-home { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 35px 20px 20px 20px; align-content: start; overflow-y: auto; }
+        
+        .app-icon {
+            width: 55px; height: 55px; background: #3a3a48; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; cursor: pointer; text-align: center; flex-direction: column;
+            font-family: sans-serif;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .app-icon:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.3); }
+        .app-icon span { font-size: 22px; margin-bottom: 2px; }
+        
+        .back-btn { background: #ff4444; border: none; color: white; padding: 8px; width: 100%; cursor: pointer; margin-bottom: 10px; border-radius: 5px; font-weight: bold;}
+        .job-item { background: #2a2a35; padding: 10px; margin-bottom: 5px; border-radius: 8px; cursor: pointer; border: 1px solid #444;}
+        .work-btn { background: #4CAF50; border: none; color: white; padding: 15px; width: 100%; font-size: 18px; border-radius: 10px; cursor: pointer; transition: transform 0.1s; margin-top: 15px; font-weight: bold;}
+        .work-btn:active { transform: scale(0.95); }
+        #work-stats { margin-top: 10px; font-size: 14px; color: #aaa; }
+        
+        .inv-item { background: #2a2a35; padding: 8px; border-radius: 10px; text-align: center; cursor: pointer; border: 2px solid transparent; }
+        .inv-item:hover { border-color: #4CAF50; }
+
+        /* Екран входу/реєстрації */
+        #auth-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; color: white; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        .auth-box { background: #1a1a1a; padding: 40px; border-radius: 0; border: 4px solid #fff; text-align: center; box-shadow: 8px 8px 0px rgba(0,0,0,1); }
+        .auth-box h2 { font-size: 40px; margin-top: 0; color: #ffcc00; text-shadow: 2px 2px #000;}
+        .auth-box input { margin: 10px; padding: 10px; border-radius: 0; border: 2px solid #555; width: 220px; font-family: 'VT323'; font-size: 20px; background: #000; color: #fff;}
+        .auth-btn { background: #4CAF50; color: white; padding: 10px 20px; border: 2px solid #fff; cursor: pointer; border-radius: 0; margin: 5px; font-size: 20px; font-family: 'VT323';}
+
+        /* Інтер'єр приміщення */
+        #interior-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none; z-index: 80;
+            color: white; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .interior-room { width: 80%; height: 80%; border: 4px solid #fff; border-radius: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-family: sans-serif;}
+        .exit-btn { position: absolute; top: 20px; right: 20px; background: #ff4444; color: white; padding: 15px; cursor: pointer; border-radius: 5px; border: none; font-size: 16px; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+<div id="auth-screen">
+    <div class="auth-box">
+        <h2>CITY LIFE CLICKER</h2>
+        <p style="font-size: 22px;">Увійдіть або зареєструйтесь</p>
+        <input type="text" id="username" placeholder="Логін"><br>
+        <input type="password" id="password" placeholder="Пароль"><br>
+        <button class="auth-btn" style="background:#2196f3;" onclick="login()">УВІЙТИ</button>
+        <button class="auth-btn" onclick="register()">РЕЄСТРАЦІЯ</button>
+    </div>
+</div>
+
+<div id="interior-overlay">
+    <div class="interior-room">
+        <button class="exit-btn" onclick="exitBuilding()">ВИЙТИ НА ВУЛИЦЮ 🚪</button>
+        <h1 id="interior-title">Приміщення</h1>
+        <div id="interior-emoji" style="font-size: 120px;">🏠</div>
+        <p id="interior-desc">Ви всередині.</p>
+        <div id="interior-actions" style="width: 300px;"></div>
+    </div>
+</div>
+
+<div id="game-title">
+    <h1>CITY LIFE CLICKER: EMOJI EDITION</h1>
+    <p>Твоє унікальне життя у місті емодзі</p>
+</div>
+
+<div id="stats-bars">
+    <div id="user-display" style="margin-bottom:15px; font-size: 22px; color: #fff;">Гравець: <span style="color:#4CAF50">[USER]</span></div>
+    <div class="stat-row">🍎 Голод: <div class="bar-bg"><div id="hunger-bar" class="bar-fill" style="background: #ff5252; width: 100%;"></div></div></div>
+    <div class="stat-row">😄 Настрій: <div class="bar-bg"><div id="mood-bar" class="bar-fill" style="background: #ffcc00; width: 100%;"></div></div></div>
+    <div class="stat-row">😴 Сон: <div class="bar-bg"><div id="sleep-bar" class="bar-fill" style="background: #2196f3; width: 100%;"></div></div></div>
+</div>
+
+<div id="location-banner">Ви підійшли до будівлі</div>
+
+<div id="phone">
+    <div id="phone-home">
+        <div class="app-icon" onclick="openApp('news')"><span>📰</span>Новини</div>
+        <div class="app-icon" onclick="openApp('profile')"><span>👤</span>Профіль</div>
+        <div class="app-icon" onclick="openApp('bank')"><span>🏦</span>Банк</div>
+        <div class="app-icon" onclick="openApp('jobs')"><span>💼</span>Робота</div>
+        
+        <div class="app-icon" onclick="openApp('shop_tech')" style="background:#424242;"><span>📱</span>Техніка</div>
+        <div class="app-icon" onclick="openApp('shop_pharmacy')" style="background:#009688;"><span>💊</span>Аптека</div>
+        <div class="app-icon" onclick="openApp('shop_toys')" style="background:#6d4c41;"><span>🧸</span>Іграшки</div>
+        <div class="app-icon" onclick="openApp('shop_food')" style="background:#2e7d32;"><span>🛒</span>Харчі</div>
+        <div class="app-icon" onclick="openApp('shop_clothes')" style="background:#1565c0;"><span>👕</span>Одяг</div>
+        <div class="app-icon" id="backpack-app-icon" onclick="openApp('backpack')" style="background:#f57c00;"><span id="backpack-app-emoji">🎒</span>Рюкзак</div>
+        <div class="app-icon" onclick="openApp('taxi')" style="background:#fbc02d;"><span>🚕</span>Таксі</div>
+        
+        <div class="app-icon" onclick="openApp('telegram')" style="background:#2AABEE;"><span>✈️</span>Telegram</div>
+        <div class="app-icon" onclick="openApp('mail')" style="background:#d44638;"><span>📧</span>Пошта</div>
+        
+        <div class="app-icon" onclick="openApp('servers')" style="background:#ff9800;"><span>🌐</span>Ефіри</div>
+        <div class="app-icon" onclick="openApp('editor')" style="background:#607d8b;"><span>🛠️</span>Редактор</div>
+
+        <div class="app-icon" onclick="openApp('real_estate')" style="background:#8d6e63;"><span>🏘️</span>Будинки</div>
+        <div class="app-icon" onclick="openApp('business')" style="background:#9e9d24;"><span>📈</span>Бізнес</div>
+
+        <div class="app-icon" onclick="openApp('browser')" style="background:#00bcd4;"><span>🌍</span>Браузер</div>
+        <div class="app-icon" onclick="openApp('chatgpt')" style="background:#10a37f;"><span>🤖</span>ChatGPT</div>
+
+        <div class="app-icon" onclick="saveGame()" style="background:#9c27b0;"><span>💾</span>Зберегти</div>
+        <div class="app-icon" onclick="logout()" style="background:#e91e63;"><span>🚪</span>Вийти</div>
+
+        <div id="active-work-app" style="display:none;"></div>
+    </div>
+    <div id="phone-screen">
+        <button class="back-btn" onclick="closeApp()">← Назад</button>
+        <div id="app-content"></div>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+// --- СТАН ГРАВЦЯ ---
+const player = {
+    username: "",
+    x: 500, y: 500, speed: 5, money: 100,
+    jobName: "Безробітний", jobId: null, clicksDone: 0,
+    inventory: [],
+    hunger: 100, mood: 100, sleep: 100,
+    homePos: { x: 500, y: 500 },
+    backpackColor: '#f57c00', 
+    backpackEmoji: '🎒',       
+    emails: [],
+    phoneNumber: null,
+    messages: [],
+    chatGptHistory: [{role: 'ai', text: 'Привіт! Я твій вбудований ШІ-помічник. Чим можу допомогти тобі в цьому місті?'}]
+};
+
+let isGameActive = false;
+let inBuilding = false;
+
+const buildingEmojis = {
+    'home': '🏠', 'other_home': '🏡', 'hospital': '🏥', 'police': '🚓', 
+    'post': '🏣', 'toy_shop': '🧸', 'food_shop': '🛒', 'cloth_shop': '👕', 
+    'pharmacy': '💊', 'tree': '🌳', 
+    'club': '🏢'
+};
+
+const enterableBuildings = {
+    'home': 'Свій Будинок 🏠',
+    'hospital': 'Лікарню 🏥',
+    'police': 'Поліцейський відділок 🚓',
+    'toy_shop': 'Магазин іграшок 🧸',
+    'food_shop': 'Продуктовий магазин 🛒',
+    'cloth_shop': 'Магазин одягу 👕',
+    'pharmacy': 'Аптеку 💊',
+    'post': 'Пошту 🏣',
+    'club': 'Нічний Клуб 🏢'
+};
+
+// МАГАЗИНИ
+const shopItems = {
+    tech: [
+        { name: "SIM-карта (Номер)", icon: "📱", price: 100, type: 'sim' },
+        { name: "Навушники", icon: "🎧", price: 150, type: 'tech' },
+        { name: "Смарт-годинник", icon: "⌚", price: 300, type: 'tech' },
+        { name: "Ноутбук", icon: "💻", price: 800, type: 'tech' },
+        { name: "Камера", icon: "📸", price: 400, type: 'tech' },
+        { name: "Мишка", icon: "🖱️", price: 40, type: 'tech' },
+        { name: "Мікрофон", icon: "🎙️", price: 120, type: 'tech' }
+    ],
+    pharmacy: [
+        { name: "Аспірин", icon: "💊", price: 15, type: 'med', value: 20 },
+        { name: "Сироп", icon: "🧪", price: 25, type: 'med', value: 35 },
+        { name: "Аптечка", icon: "🩹", price: 50, type: 'med', value: 80 },
+        { name: "Вітаміни", icon: "🍏", price: 10, type: 'med', value: 15 }
+    ],
+    toys: [
+        { name: "Плюшева Капібара", icon: "🦦", price: 250, type: 'toy' },
+        { name: "Ведмедик", icon: "🧸", price: 50, type: 'toy' },
+        { name: "М'яч", icon: "⚽", price: 30, type: 'toy' },
+        { name: "Робот", icon: "🤖", price: 120, type: 'toy' },
+        { name: "Йо-йо", icon: "🪀", price: 15, type: 'toy' },
+        { name: "Повітряний змій", icon: "🪁", price: 25, type: 'toy' },
+        { name: "Пазл", icon: "🧩", price: 40, type: 'toy' },
+        { name: "Машинка", icon: "🚗", price: 35, type: 'toy' },
+        { name: "Потяг", icon: "🚂", price: 60, type: 'toy' },
+        { name: "Ігрова консоль", icon: "🎮", price: 300, type: 'toy' },
+        { name: "Водний пістолет", icon: "🔫", price: 45, type: 'toy' },
+        { name: "Гумова качка", icon: "🦆", price: 10, type: 'toy' },
+        { name: "Динозавр", icon: "🦖", price: 55, type: 'toy' },
+        { name: "НЛО на пульті", icon: "🛸", price: 150, type: 'toy' },
+        { name: "Скейтборд", icon: "🛹", price: 90, type: 'toy' }
+    ],
+    food: [
+        { name: "Піца", icon: "🍕", price: 15, type: 'food', value: 30 },
+        { name: "Бургер", icon: "🍔", price: 12, type: 'food', value: 25 },
+        { name: "Морозиво", icon: "🍦", price: 5, type: 'food', value: 10 },
+        { name: "Хот-дог", icon: "🌭", price: 8, type: 'food', value: 20 },
+        { name: "Тако", icon: "🌮", price: 10, type: 'food', value: 22 },
+        { name: "Шаурма", icon: "🌯", price: 14, type: 'food', value: 35 },
+        { name: "Кебаб", icon: "🥙", price: 13, type: 'food', value: 30 },
+        { name: "Салат", icon: "🥗", price: 18, type: 'food', value: 15 },
+        { name: "Сендвіч", icon: "🥪", price: 9, type: 'food', value: 20 },
+        { name: "Картопля фрі", icon: "🍟", price: 7, type: 'food', value: 15 },
+        { name: "М'ясо", icon: "🥩", price: 20, type: 'food', value: 30 },
+        { name: "Яйце", icon: "🥚", price: 4, type: 'food', value: 8 },
+        { name: "Сир", icon: "🧀", price: 8, type: 'food', value: 15 },
+        { name: "Хліб", icon: "🍞", price: 5, type: 'food', value: 12 }
+    ],
+    clothes: [
+        { name: "Кросівки", icon: "👟", price: 80 },
+        { name: "Кепка", icon: "🧢", price: 25 },
+        { name: "Худі", icon: "🧥", price: 150 },
+        { name: "Футболка", icon: "👕", price: 30 },
+        { name: "Джинси", icon: "👖", price: 60 }
+    ]
+};
+
+const workMiniGames = {
+    'cook': { name: 'Кухар', icon: '🍔', actionName: 'Зробити бургер 🍔', pay: 10 },
+    'banker': { name: 'Банкір', icon: '💳', actionName: 'Схвалити кредит 💵', pay: 20 },
+    'firefighter': { name: 'Пожежник', icon: '🧯', actionName: 'Гасити вогонь 🔥', pay: 15 },
+    'doctor': { name: 'Лікар', icon: '💉', actionName: 'Вилікувати пацієнта 🩺', pay: 25 },
+    'courier': { name: 'Кур\'єр', icon: '🛵', actionName: 'Віддати пакунок 📦', pay: 8 },
+    'it': { name: 'IT-Розробник', icon: '💻', actionName: 'Видалити вірус 👾', pay: 50 },
+    'manager': { name: 'Менеджер', icon: '📄', actionName: 'Підписати звіт 🖋️', pay: 30 }
+};
+
+const worldSize = 3000;
+const tileSize = 120;
+const buildings = [];
+const roads = [];
+const cars = [];
+const benches = [];
+
+// --- СИСТЕМА АКАУНТІВ ---
+function register() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    if(user && pass) {
+        if(localStorage.getItem('user_' + user)) {
+            alert("Цей логін вже зайнятий!");
+            return;
+        }
+        const data = { pass: pass, stats: player };
+        localStorage.setItem('user_' + user, JSON.stringify(data));
+        alert("Реєстрація успішна! Тепер увійдіть.");
+    }
+}
+
+function login() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    const savedData = localStorage.getItem('user_' + user);
+    
+    if(savedData) {
+        const data = JSON.parse(savedData);
+        if(data.pass === pass) {
+            Object.assign(player, data.stats); 
+            player.username = user;
+            if(!player.emails) player.emails = []; 
+            if(!player.messages) player.messages = [];
+            if(!player.chatGptHistory) player.chatGptHistory = [{role: 'ai', text: 'Привіт! Я твій вбудований ШІ-помічник. Чим можу допомогти тобі в цьому місті?'}]; 
+            startGame();
+        } else { alert("Невірний пароль!"); }
+    } else { alert("Користувача не знайдено!"); }
+}
+
+function saveGame() {
+    const data = JSON.parse(localStorage.getItem('user_' + player.username));
+    data.stats = player;
+    localStorage.setItem('user_' + player.username, JSON.stringify(data));
+    alert("Гру успішно збережено!");
+}
+
+function startGame() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('game-title').style.display = 'block';
+    document.getElementById('stats-bars').style.display = 'block';
+    document.getElementById('phone').style.display = 'flex';
+    document.getElementById('user-display').innerHTML = `Гравець: <span style="color:#4CAF50">[${player.username}]</span>`;
+    
+    if (!player.backpackColor) player.backpackColor = '#f57c00';
+    if (!player.backpackEmoji) player.backpackEmoji = '🎒';
+    document.getElementById('backpack-app-icon').style.background = player.backpackColor;
+    document.getElementById('backpack-app-emoji').innerText = player.backpackEmoji;
+    
+    isGameActive = true;
+    initWorld();
+    gameLoop();
+}
+
+function logout() {
+    saveGame();
+    location.reload();
+}
+
+// --- ФУНКЦІЇ ІНТЕР'ЄРУ ТА КУХНІ ---
+function enterBuilding(type) {
+    inBuilding = true;
+    document.getElementById('interior-overlay').style.display = 'flex';
+    document.getElementById('location-banner').style.display = 'none';
+    
+    const title = document.getElementById('interior-title');
+    const emoji = document.getElementById('interior-emoji');
+    const actions = document.getElementById('interior-actions');
+    
+    document.querySelector('.interior-room').style.borderColor = "#fff"; 
+    actions.innerHTML = '';
+    
+    if (type === 'home') {
+        title.innerText = "Мій Дім 🏠";
+        emoji.innerText = "🛋️📺";
+        actions.innerHTML = `
+            <button class="work-btn" onclick="sleepInBed()">🛌 Лягти спати</button>
+            <button class="work-btn" style="background:#ff9800;" onclick="openKitchen()">🍳 Кухня (Готувати)</button>
+        `;
+    } else if (type === 'club') {
+        title.innerText = "Нічний Клуб 🎶";
+        emoji.innerText = "🕺🍹";
+        document.querySelector('.interior-room').style.borderColor = "#9c27b0";
+        actions.innerHTML = `<button class="work-btn" style="background:#e91e63;" onclick="drinkCocktail()">🍹 Купити коктейль (15$)</button>`;
+    } else if (type === 'pharmacy') {
+        title.innerText = "Аптека 💊"; emoji.innerText = "🩺";
+        actions.innerHTML = `<button class="work-btn" style="background:#009688;" onclick="openApp('shop_pharmacy')">Відкрити магазин ліків</button>`;
+    } else if (type === 'food_shop') {
+        title.innerText = "Продуктовий 🛒"; emoji.innerText = "🍞🍎";
+        actions.innerHTML = `<button class="work-btn" style="background:#2e7d32;" onclick="openApp('shop_food')">Купити продукти</button>`;
+    } else if (type === 'toy_shop') {
+        title.innerText = "Магазин іграшок 🧸"; emoji.innerText = "🎮";
+        actions.innerHTML = `<button class="work-btn" style="background:#6d4c41;" onclick="openApp('shop_toys')">Купити іграшки</button>`;
+    } else if (type === 'cloth_shop') {
+        title.innerText = "Магазин одягу 👕"; emoji.innerText = "👗👔";
+        actions.innerHTML = `<button class="work-btn" style="background:#1565c0;" onclick="openApp('shop_clothes')">Оновити гардероб</button>`;
+    } else if (type === 'hospital') {
+        title.innerText = "Лікарня 🏥"; emoji.innerText = "🚑";
+        actions.innerHTML = `<button class="work-btn" style="background:#e53935;" onclick="healCompletely()">🩸 Повне лікування (50$)</button>`;
+    } else if (type === 'police') {
+        title.innerText = "Поліція 🚓"; emoji.innerText = "👮";
+        actions.innerHTML = `<p style="text-align:center;">Тут працює поліція. У вас немає порушень!</p>`;
+    } else if (type === 'post') {
+        title.innerText = "Пошта 🏣"; emoji.innerText = "📦";
+        actions.innerHTML = `<button class="work-btn" style="background:#d44638;" onclick="openApp('mail')">Перевірити скриньку</button>`;
+    } else {
+        title.innerText = "Будівля " + buildingEmojis[type]; emoji.innerText = buildingEmojis[type];
+        actions.innerHTML = `<p style="text-align:center;">Ви оглядаєте приміщення.</p>`;
+    }
+}
+
+function exitBuilding() {
+    inBuilding = false;
+    document.getElementById('interior-overlay').style.display = 'none';
+}
+
+function sleepInBed() {
+    player.sleep = 100;
+    alert("Ви солодко виспалися! Сон на 100%");
+}
+
+function drinkCocktail() {
+    if(player.money >= 15) {
+        player.money -= 15;
+        player.mood = Math.min(100, player.mood + 40);
+        player.hunger = Math.min(100, player.hunger + 5);
+        alert("Ви випили коктейль! Настрій сильно покращився (+40).");
+    } else {
+        alert("Не вистачає грошей на коктейль!");
+    }
+}
+
+function healCompletely() {
+    if (player.money >= 50) {
+        player.money -= 50;
+        player.mood = 100;
+        player.sleep = 100;
+        player.hunger = 100;
+        alert("Вас повністю вилікували!");
+    } else {
+        alert("Не вистачає грошей на лікування (потрібно 50$)!");
+    }
+}
+
+function openKitchen() {
+    document.getElementById('interior-title').innerText = "Кухня 🍳";
+    document.getElementById('interior-emoji').innerText = "👨‍🍳";
+    
+    let foodItems = player.inventory.map((item, idx) => ({...item, origIdx: idx})).filter(i => i.type === 'food');
+    
+    let html = `<p style="text-align:center;">Виберіть два інгредієнти:</p>`;
+    if (foodItems.length < 2) {
+        html += `<p style="color:#ff5252; text-align:center;">У вас замало їжі в рюкзаку! Потрібно хоча б 2 продукти.</p>`;
+        html += `<button class="work-btn" onclick="enterBuilding('home')">Назад</button>`;
+    } else {
+        html += `<select id="cook-item-1" style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; font-size:16px;">`;
+        foodItems.forEach(i => html += `<option value="${i.origIdx}">${i.icon} ${i.name}</option>`);
+        html += `</select>`;
+        
+        html += `<select id="cook-item-2" style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; font-size:16px;">`;
+        foodItems.forEach(i => html += `<option value="${i.origIdx}">${i.icon} ${i.name}</option>`);
+        html += `</select>`;
+        
+        html += `<button class="work-btn" style="background:#ff9800;" onclick="cookFood()">Готувати 🔥</button>`;
+        html += `<button class="work-btn" style="background:#555; margin-top:5px;" onclick="enterBuilding('home')">Скасувати</button>`;
+    }
+    document.getElementById('interior-actions').innerHTML = html;
+}
+
+function cookFood() {
+    let idx1 = parseInt(document.getElementById('cook-item-1').value);
+    let idx2 = parseInt(document.getElementById('cook-item-2').value);
+    
+    if (idx1 === idx2) return alert("Виберіть різні предмети (або у вас тільки один такий)!");
+    
+    let item1 = player.inventory[idx1];
+    let item2 = player.inventory[idx2];
+    
+    let maxIdx = Math.max(idx1, idx2);
+    let minIdx = Math.min(idx1, idx2);
+    
+    player.inventory.splice(maxIdx, 1);
+    player.inventory.splice(minIdx, 1);
+    
+    let newFood = {
+        name: "Домашня страва",
+        icon: "🍲",
+        type: "food",
+        value: Math.floor((item1.value + item2.value) * 1.5),
+        id: Date.now()
+    };
+    
+    player.inventory.push(newFood);
+    alert(`Ви приготували: 🍲 Домашня страва! Відновлює ${newFood.value} ситості.`);
+    enterBuilding('home');
+}
+
+// ГЕНЕРАЦІЯ СВІТУ
+function initWorld() {
+    if (buildings.length > 0) return; 
+
+    for (let i = 0; i < worldSize; i += tileSize * 5) {
+        roads.push({ x: i, y: 0, w: tileSize, h: worldSize });
+        roads.push({ x: 0, y: i, w: worldSize, h: tileSize });
+    }
+
+    buildings.push({ x: player.homePos.x, y: player.homePos.y, type: 'home' });
+    buildings.push({ x: player.homePos.x + 300, y: player.homePos.y, type: 'club' });
+
+    const types = Object.keys(buildingEmojis).filter(t => t !== 'home' && t !== 'club');
+    for (let x = 0; x < worldSize; x += tileSize) {
+        for (let y = 0; y < worldSize; y += tileSize) {
+            const isOnRoad = roads.some(r => x < r.x + r.w && x + tileSize > r.x && y < r.y + r.h && y + tileSize > r.y);
+            const isReserved = (x >= player.homePos.x - 100 && x <= player.homePos.x + 400 && y >= player.homePos.y - 100 && y <= player.homePos.y + 100);
+            
+            if (!isOnRoad && !isReserved && Math.random() > 0.6) {
+                const type = types[Math.floor(Math.random() * types.length)];
+                buildings.push({ x, y, type });
+            } else if (!isOnRoad && !isReserved && Math.random() > 0.95) {
+                benches.push({ x, y });
+            }
+        }
+    }
+
+    for(let i=0; i<15; i++) {
+        cars.push({ x: roads[0].x + 20, y: Math.random() * worldSize, speed: 2 + Math.random() * 3 });
+    }
+}
+
+const keys = {};
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+let currentBuilding = null;
+
+function update() {
+    if (!isGameActive || inBuilding) return;
+
+    if (keys['KeyW']) player.y -= player.speed;
+    if (keys['KeyS']) player.y += player.speed;
+    if (keys['KeyA']) player.x -= player.speed;
+    if (keys['KeyD']) player.x += player.speed;
+
+    player.hunger = Math.max(0, player.hunger - 0.01);
+    player.mood = Math.max(0, player.mood - 0.005);
+    player.sleep = Math.max(0, player.sleep - 0.008);
+
+    document.getElementById('hunger-bar').style.width = player.hunger + '%';
+    document.getElementById('mood-bar').style.width = player.mood + '%';
+    document.getElementById('sleep-bar').style.width = player.sleep + '%';
+
+    cars.forEach(car => {
+        car.y += car.speed;
+        if (car.y > worldSize) car.y = -50;
+    });
+
+    let foundBuilding = null;
+    let foundType = null;
+
+    buildings.forEach(b => {
+        if (player.x + 15 > b.x && player.x + 15 < b.x + tileSize &&
+            player.y + 15 > b.y && player.y + 15 < b.y + tileSize) {
+            foundBuilding = enterableBuildings[b.type];
+            foundType = b.type;
+            
+            if (b.type === 'home') {
+                const hasToy = player.inventory.some(i => i.type === 'toy');
+                player.mood = Math.min(100, player.mood + (hasToy ? 0.05 : 0.01));
+            }
+        }
+    });
+
+    const banner = document.getElementById('location-banner');
+    if (foundBuilding) {
+        if (currentBuilding !== foundBuilding) {
+            currentBuilding = foundBuilding;
+            
+            let html = `Ви підійшли до:<br><span style="color:#ffcc00;">${foundBuilding}</span>`;
+            html += `<br><button onclick="enterBuilding('${foundType}')" style="margin-top:15px; padding:10px 30px; cursor:pointer;">УВІЙТИ</button>`;
+            
+            banner.innerHTML = html;
+            banner.style.display = 'block';
+        }
+    } else {
+        currentBuilding = null;
+        banner.style.display = 'none';
+    }
+}
+
+// --- ІЗОМЕТРИЧНА ПРОЄКЦІЯ ТА РЕНДЕР ---
+
+function toIso(x, y) {
+    return {
+        x: (x - y),
+        y: (x + y) / 2
+    };
+}
+
+function drawIsoBlock(ctx, isoX, isoY, size, height, colorTop, colorLeft, colorRight, isGlowing) {
+    let top = {x: isoX, y: isoY - height};
+    let right = {x: isoX + size, y: isoY + size/2 - height};
+    let bottom = {x: isoX, y: isoY + size - height};
+    let left = {x: isoX - size, y: isoY + size/2 - height};
+    
+    let bottomBase = {x: isoX, y: isoY + size};
+    let rightBase = {x: isoX + size, y: isoY + size/2};
+    let leftBase = {x: isoX - size, y: isoY + size/2};
+
+    if(isGlowing) {
+        ctx.shadowColor = "rgba(255, 255, 100, 0.8)";
+        ctx.shadowBlur = 40;
+    }
+
+    ctx.fillStyle = colorTop;
+    ctx.beginPath(); ctx.moveTo(top.x, top.y); ctx.lineTo(right.x, right.y); ctx.lineTo(bottom.x, bottom.y); ctx.lineTo(left.x, left.y); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = colorLeft;
+    ctx.beginPath(); ctx.moveTo(left.x, left.y); ctx.lineTo(bottom.x, bottom.y); ctx.lineTo(bottomBase.x, bottomBase.y); ctx.lineTo(leftBase.x, leftBase.y); ctx.fill();
+
+    ctx.fillStyle = colorRight;
+    ctx.beginPath(); ctx.moveTo(bottom.x, bottom.y); ctx.lineTo(right.x, right.y); ctx.lineTo(rightBase.x, rightBase.y); ctx.lineTo(bottomBase.x, bottomBase.y); ctx.fill();
+    
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(left.x, left.y); ctx.lineTo(bottom.x, bottom.y); ctx.lineTo(right.x, right.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bottom.x, bottom.y); ctx.lineTo(bottomBase.x, bottomBase.y); ctx.stroke();
+}
+
+function drawPlayerChar(ctx, x, y) {
+    ctx.fillStyle = '#ffcc00'; 
+    ctx.fillRect(x - 12, y - 45, 24, 24);
+    
+    ctx.fillStyle = '#000'; 
+    ctx.fillRect(x - 6, y - 38, 4, 4);
+    ctx.fillRect(x + 2, y - 38, 4, 4);
+    ctx.fillRect(x - 4, y - 30, 8, 2);
+
+    ctx.fillStyle = '#4b8de8'; 
+    ctx.fillRect(x - 10, y - 21, 20, 18);
+    
+    ctx.fillStyle = '#224a87'; 
+    ctx.fillRect(x - 8, y - 3, 6, 12);
+    ctx.fillRect(x + 2, y - 3, 6, 12);
+}
+
+function draw() {
+    if (!isGameActive) return; 
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    let centerIso = toIso(player.x, player.y);
+    let camOffsetX = canvas.width / 2 - centerIso.x;
+    let camOffsetY = canvas.height / 2 - centerIso.y;
+
+    ctx.save();
+    ctx.translate(camOffsetX, camOffsetY);
+
+    ctx.fillStyle = '#253f19'; 
+    let p1 = toIso(0, 0);
+    let p2 = toIso(worldSize, 0);
+    let p3 = toIso(worldSize, worldSize);
+    let p4 = toIso(0, worldSize);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.fill();
+
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 2;
+    for(let i=0; i<=worldSize; i+=tileSize) {
+        let st1 = toIso(i, 0); let en1 = toIso(i, worldSize);
+        ctx.beginPath(); ctx.moveTo(st1.x, st1.y); ctx.lineTo(en1.x, en1.y); ctx.stroke();
+        let st2 = toIso(0, i); let en2 = toIso(worldSize, i);
+        ctx.beginPath(); ctx.moveTo(st2.x, st2.y); ctx.lineTo(en2.x, en2.y); ctx.stroke();
+    }
+
+    ctx.fillStyle = '#1e1e1e';
+    roads.forEach(r => {
+        let r1 = toIso(r.x, r.y);
+        let r2 = toIso(r.x + r.w, r.y);
+        let r3 = toIso(r.x + r.w, r.y + r.h);
+        let r4 = toIso(r.x, r.y + r.h);
+        ctx.beginPath(); ctx.moveTo(r1.x, r1.y); ctx.lineTo(r2.x, r2.y); ctx.lineTo(r3.x, r3.y); ctx.lineTo(r4.x, r4.y); ctx.fill();
+        
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 4;
+        let c1, c2;
+        if (r.w > r.h) {
+            c1 = toIso(r.x, r.y + r.h/2); c2 = toIso(r.x + r.w, r.y + r.h/2);
+        } else {
+            c1 = toIso(r.x + r.w/2, r.y); c2 = toIso(r.x + r.w/2, r.y + r.h);
+        }
+        ctx.setLineDash([20, 20]);
+        ctx.beginPath(); ctx.moveTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y); ctx.stroke();
+        ctx.setLineDash([]);
+    });
+
+    let renderQueue = [];
+    
+    buildings.forEach(b => renderQueue.push({ type: 'building', obj: b, depth: b.x + b.y }));
+    benches.forEach(b => renderQueue.push({ type: 'bench', obj: b, depth: b.x + b.y }));
+    cars.forEach(c => renderQueue.push({ type: 'car', obj: c, depth: c.x + c.y }));
+    renderQueue.push({ type: 'player', obj: player, depth: player.x + player.y });
+
+    renderQueue.sort((a, b) => a.depth - b.depth);
+
+    ctx.textAlign = "center";
+    renderQueue.forEach(item => {
+        let centerX = item.obj.x + (item.type==='building' ? tileSize/2 : 0);
+        let centerY = item.obj.y + (item.type==='building' ? tileSize/2 : 0);
+        let iso = toIso(centerX, centerY);
+        
+        if (item.type === 'building') {
+            let b = item.obj;
+            let isGlowing = (currentBuilding === enterableBuildings[b.type]);
+            
+            let colorTop = '#e0e0e0', colorLeft = '#cccccc', colorRight = '#999999';
+            let height = 80;
+            
+            if (b.type === 'home') { colorTop = '#ffcc80'; colorLeft = '#ffa726'; colorRight = '#fb8c00'; }
+            if (b.type === 'hospital') { colorTop = '#ffcdd2'; colorLeft = '#ef9a9a'; colorRight = '#e53935'; height = 100;}
+            if (b.type === 'club') { colorTop = '#ce93d8'; colorLeft = '#ab47bc'; colorRight = '#8e24aa'; height = 120;}
+            if (b.type === 'food_shop') { colorTop = '#a5d6a7'; colorLeft = '#66bb6a'; colorRight = '#43a047'; }
+            if (b.type === 'tree') { colorTop = '#81c784'; colorLeft = '#4caf50'; colorRight = '#388e3c'; height = 40; size=30;}
+            
+            drawIsoBlock(ctx, iso.x, iso.y, tileSize/2, height, colorTop, colorLeft, colorRight, isGlowing);
+            
+            ctx.font = "60px sans-serif";
+            ctx.fillText(buildingEmojis[b.type], iso.x, iso.y - height - 10);
+
+        } else if (item.type === 'bench') {
+            ctx.font = "30px sans-serif";
+            ctx.fillText('🪑', iso.x, iso.y - 15);
+        } else if (item.type === 'car') {
+            ctx.font = "50px sans-serif";
+            ctx.fillText('🚗', iso.x, iso.y - 20);
+        } else if (item.type === 'player') {
+            drawPlayerChar(ctx, iso.x, iso.y);
+        }
+    });
+
+    ctx.restore();
+}
+
+function gameLoop() { 
+    update(); 
+    draw(); 
+    requestAnimationFrame(gameLoop);
+}
+
+// --- ЛОГІКА ПОШТИ ---
+function renderMailUI() {
+    let html = `<h3>Пошта 📧</h3>
+    <button class="work-btn" style="padding:10px; margin-top:0;" onclick="openApp('compose_mail')">Написати листа ✏️</button>
+    <hr style="border-color:#444;">`;
+    
+    if (player.emails.length === 0) {
+        html += `<p style="text-align:center; color:#888;">Немає листів</p>`;
+    } else {
+        for(let i = player.emails.length - 1; i >= 0; i--) {
+            let email = player.emails[i];
+            let attachmentIcon = (email.money > 0 || email.item) ? (!email.claimed ? ' 🎁' : ' (Відкрито)') : '';
+            html += `<div class="job-item" onclick="openApp('view_mail', ${i})">
+                <b>Від:</b> ${email.from} <br>
+                <b>Тема:</b> ${email.subject} <span style="float:right;">${attachmentIcon}</span>
+            </div>`;
+        }
+    }
+    return html;
+}
+
+function renderComposeMailUI() {
+    let invOptions = `<option value="-1">Без предмета</option>`;
+    player.inventory.forEach((item, idx) => {
+        invOptions += `<option value="${idx}">${item.icon} ${item.name}</option>`;
+    });
+
+    return `<h3>Новий лист</h3>
+    <input type="text" id="mail-to" placeholder="Одержувач (Логін)" style="width:90%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; font-family:sans-serif;">
+    <input type="text" id="mail-subject" placeholder="Тема" style="width:90%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; font-family:sans-serif;">
+    <textarea id="mail-text" placeholder="Текст листа..." style="width:90%; height:60px; padding:8px; margin-bottom:5px; border-radius:5px; border:none; resize:none; font-family:sans-serif;"></textarea>
+    
+    <div style="background:#3a3a48; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <p style="margin:0 0 5px 0; font-size:14px; color:#ccc;">Вкладення:</p>
+        <input type="number" id="mail-money" placeholder="Сума грошей ($)" style="width:90%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; font-family:sans-serif;">
+        <select id="mail-item" style="width:98%; padding:8px; border-radius:5px; border:none; margin-bottom:5px; font-family:sans-serif;">
+            ${invOptions}
+        </select>
+    </div>
+    
+    <button class="work-btn" style="background:#d44638;" onclick="sendMail()">Відправити 🚀</button>`;
+}
+
+function sendMail() {
+    let to = document.getElementById('mail-to').value.trim();
+    let subject = document.getElementById('mail-subject').value.trim() || "Без теми";
+    let text = document.getElementById('mail-text').value.trim();
+    let money = parseInt(document.getElementById('mail-money').value) || 0;
+    let itemIdx = parseInt(document.getElementById('mail-item').value);
+
+    if (!to) return alert("Вкажіть логін одержувача!");
+    if (money > player.money) return alert("У вас недостатньо грошей для переказу!");
+    if (money < 0) return alert("Невірна сума грошей!");
+
+    let attachedItem = null;
+    if (itemIdx >= 0 && player.inventory[itemIdx]) {
+        attachedItem = player.inventory[itemIdx];
+        player.inventory.splice(itemIdx, 1);
+    }
+
+    if (money > 0) player.money -= money;
+
+    if (to === player.username) {
+        player.emails.push({
+            from: player.username, subject: subject, text: text, money: money, item: attachedItem, claimed: false
+        });
+        saveGame();
+        alert("Лист успішно відправлено самому собі!");
+        openApp('mail');
+        return;
+    }
+
+    let recipientDataStr = localStorage.getItem('user_' + to);
+    if (!recipientDataStr) {
+        if(money > 0) player.money += money;
+        if(attachedItem) player.inventory.push(attachedItem);
+        return alert("Гравця з таким логіном не знайдено в базі!");
+    }
+
+    let recipientData = JSON.parse(recipientDataStr);
+    if (!recipientData.stats.emails) recipientData.stats.emails = [];
+
+    recipientData.stats.emails.push({
+        from: player.username, subject: subject, text: text, money: money, item: attachedItem, claimed: false
+    });
+
+    localStorage.setItem('user_' + to, JSON.stringify(recipientData));
+    saveGame();
+    
+    alert("Лист успішно відправлено!");
+    openApp('mail');
+}
+
+function renderViewMailUI(index) {
+    let email = player.emails[index];
+    let html = `<h3>Читання листа</h3>
+    <div style="background:#2a2a35; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <p style="margin:5px 0;"><b>Від:</b> ${email.from}</p>
+        <p style="margin:5px 0;"><b>Тема:</b> ${email.subject}</p>
+        <hr style="border-color:#555;">
+        <p style="margin:5px 0; white-space:pre-wrap;">${email.text}</p>
+    </div>`;
+
+    if ((email.money > 0 || email.item)) {
+        html += `<div style="background:#3a3a48; padding:10px; border-radius:10px; text-align:center;">
+            <p style="margin:0 0 10px 0;"><b>Вкладення:</b></p>`;
+        
+        if (email.money > 0) html += `<p style="color:#4CAF50; margin:5px 0;">💵 ${email.money}$</p>`;
+        if (email.item) html += `<p style="margin:5px 0;">${email.item.icon} ${email.item.name}</p>`;
+        
+        if (!email.claimed) {
+            html += `<button class="work-btn" style="padding:10px; margin-top:10px;" onclick="claimMailAttachment(${index})">Отримати все</button>`;
+        } else {
+            html += `<p style="color:#aaa; font-size:12px; margin-top:10px;">(Вже отримано)</p>`;
+        }
+        html += `</div>`;
+    }
+
+    return html;
+}
+
+function claimMailAttachment(index) {
+    let email = player.emails[index];
+    if (email.claimed) return;
+    
+    if (email.money > 0) player.money += email.money;
+    if (email.item) player.inventory.push(email.item);
+    
+    email.claimed = true;
+    saveGame();
+    alert("Вкладення успішно додано до вашого рюкзака та гаманця!");
+    openApp('view_mail', index); 
+}
+
+// --- ЛОГІКА TELEGRAM ---
+function renderTelegramUI() {
+    if (!player.phoneNumber) {
+        return `<h3>Telegram ✈️</h3>
+        <p style="color:#ff5252; text-align:center; padding:20px;">У вас немає номеру телефону!<br><br>Придбайте SIM-карту в Магазині Техніки 📱</p>`;
+    }
+    
+    let html = `<h3>Telegram ✈️</h3>
+    <div style="background:#2a2a35; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <p style="margin:0; font-size:14px;">Мій номер: <b style="color:#4CAF50;">${player.phoneNumber}</b></p>
+    </div>
+    <button class="work-btn" style="background:#2AABEE; padding:10px; margin-top:0;" onclick="openApp('compose_tg')">Написати ✍️</button>
+    <hr style="border-color:#444;">`;
+    
+    if (!player.messages || player.messages.length === 0) {
+        html += `<p style="text-align:center; color:#888;">Немає повідомлень</p>`;
+    } else {
+        for(let i = player.messages.length - 1; i >= 0; i--) {
+            let msg = player.messages[i];
+            html += `<div class="job-item" style="background:#1e1e24; border-left:4px solid #2AABEE;">
+                <b style="color:#2AABEE; font-size:12px;">Від: ${msg.fromNum}</b><br>
+                <span style="font-size:14px; white-space:pre-wrap;">${msg.text}</span>
+            </div>`;
+        }
+    }
+    return html;
+}
+
+function renderComposeTgUI() {
+    return `<h3>Нове повідомлення</h3>
+    <input type="text" id="tg-to" placeholder="Номер одержувача (напр. 380...)" style="width:90%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; font-family:sans-serif;">
+    <textarea id="tg-text" placeholder="Текст..." style="width:90%; height:80px; padding:8px; margin-bottom:5px; border-radius:5px; border:none; resize:none; font-family:sans-serif;"></textarea>
+    <button class="work-btn" style="background:#2AABEE;" onclick="sendTelegram()">Відправити ✈️</button>`;
+}
+
+function sendTelegram() {
+    let toNum = document.getElementById('tg-to').value.trim();
+    let text = document.getElementById('tg-text').value.trim();
+
+    if (!toNum || !text) return alert("Заповніть всі поля!");
+
+    if (toNum === player.phoneNumber) {
+        if(!player.messages) player.messages = [];
+        player.messages.push({ fromNum: player.phoneNumber, text: text });
+        saveGame();
+        alert("Повідомлення надіслано!");
+        openApp('telegram');
+        return;
+    }
+
+    let foundUser = null;
+    let foundUsername = null;
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+        if (key.startsWith('user_')) {
+            let data = JSON.parse(localStorage.getItem(key));
+            if (data.stats && data.stats.phoneNumber === toNum) {
+                foundUser = data;
+                foundUsername = key;
+                break;
+            }
+        }
+    }
+
+    if (!foundUser) return alert("Абонента з таким номером не знайдено!");
+
+    if (!foundUser.stats.messages) foundUser.stats.messages = [];
+    foundUser.stats.messages.push({ fromNum: player.phoneNumber, text: text });
+
+    localStorage.setItem(foundUsername, JSON.stringify(foundUser));
+    alert("Повідомлення надіслано!");
+    openApp('telegram');
+}
+
+// --- ЛОГІКА ІНВЕНТАРЮ ТА МАГАЗИНІВ ---
+function useItem(index) {
+    const item = player.inventory[index];
+    if (item.type === 'food') {
+        player.hunger = Math.min(100, player.hunger + item.value);
+        player.inventory.splice(index, 1);
+        alert(`Ви з'їли ${item.name}!`);
+        openApp('backpack');
+    } else if (item.type === 'med') {
+        player.mood = Math.min(100, player.mood + item.value);
+        player.sleep = Math.min(100, player.sleep + item.value);
+        player.inventory.splice(index, 1);
+        alert(`Ви використали ${item.name}! Самопочуття покращилось.`);
+        openApp('backpack');
+    } else {
+        alert("Цей предмет покращує настрій автоматично, коли ви знаходитесь біля дому!");
+    }
+}
+
+function buyItem(name, price, icon, type, value) {
+    if (player.money >= price) {
+        if (type === 'sim') {
+            if (player.phoneNumber) {
+                return alert("У вас вже є номер телефону! (" + player.phoneNumber + ")");
+            }
+            player.money -= price;
+            player.phoneNumber = "380" + Math.floor(100000000 + Math.random() * 900000000).toString();
+            alert(`Ви придбали SIM-карту! Ваш новий номер: ${player.phoneNumber}\nТепер ви можете користуватися Telegram.`);
+            openApp('shop_tech');
+            return;
+        }
+
+        player.money -= price;
+        player.inventory.push({ name, icon, type, value, id: Date.now() });
+        alert(`Придбано: ${name}`);
+        const shopType = Object.keys(shopItems).find(t => shopItems[t].some(i => i.name === name));
+        openApp(`shop_${shopType}`);
+    } else { alert("Не вистачає грошей!"); }
+}
+
+function renderShopUI(type) {
+    const items = shopItems[type];
+    let html = `<h3>Магазин</h3><p>Баланс: <b style="color:#4CAF50;">${player.money}$</b></p><hr>`;
+    items.forEach(item => {
+        html += `<div class="job-item" onclick="buyItem('${item.name}', ${item.price}, '${item.icon}', '${item.type}', ${item.value || 0})">
+            ${item.icon} ${item.name} - <b>${item.price}$</b>
+        </div>`;
+    });
+    return html;
+}
+
+function changeBackpackStyle(color, emoji) {
+    player.backpackColor = color;
+    player.backpackEmoji = emoji;
+    document.getElementById('backpack-app-icon').style.background = color;
+    document.getElementById('backpack-app-emoji').innerText = emoji;
+    openApp('backpack');
+}
+
+function renderBackpackUI() {
+    let html = `<h3>Рюкзак <span id="ui-backpack-emoji">${player.backpackEmoji}</span></h3>`;
+    
+    html += `<div style="background:#2a2a35; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <p style="font-size:12px; margin:0 0 5px 0;">🎨 Змінити вигляд:</p>
+        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:5px;">
+            <button onclick="changeBackpackStyle('#f57c00', '🎒')" style="background:#f57c00; font-size:11px; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer;">🎒 Класика</button>
+            <button onclick="changeBackpackStyle('#4CAF50', '🧳')" style="background:#4CAF50; font-size:11px; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer;">🧳 Валіза</button>
+            <button onclick="changeBackpackStyle('#e91e63', '👜')" style="background:#e91e63; font-size:11px; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer;">👜 Сумка</button>
+            <button onclick="changeBackpackStyle('#00bcd4', '🎒')" style="background:#00bcd4; font-size:11px; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer;">🎒 Синій</button>
+        </div>
+    </div>`;
+
+    html += `<p style="font-size:12px; color:#aaa;">Натисніть на їжу або ліки, щоб використати</p>`;
+    
+    if (player.inventory.length === 0) html += `<p>Порожньо</p>`;
+    else {
+        html += `<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">`;
+        player.inventory.forEach((item, index) => {
+            html += `<div class="inv-item" onclick="useItem(${index})">
+                <div style="font-size:25px;">${item.icon}</div>
+                <div style="font-size:10px;">${item.name}</div>
+            </div>`;
+        });
+        html += `</div>`;
+    }
+    return html;
+}
+
+// --- ЛОГІКА МІНІ-СЕРВЕРІВ ТА РЕДАКТОРА ---
+function getServers() {
+    let servers = JSON.parse(localStorage.getItem('local_servers') || '[]');
+    // Оновлення для підтримки нових масивів (будинки та магазини)
+    servers.forEach(s => {
+        if (!s.houses) s.houses = [];
+        if (!s.customShops) s.customShops = [];
+    });
+    return servers;
+}
+
+function saveServers(servers) {
+    localStorage.setItem('local_servers', JSON.stringify(servers));
+}
+
+function renderEditorUI() {
+    let html = `<h3>Редактор серверів 🛠️</h3>
+    <p style="font-size:12px; color:#aaa;">Створіть свій офлайн-ефір (міні-сервер).</p>
+    <input type="text" id="server-name" placeholder="Назва сервера" style="width:90%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; font-family:sans-serif;">
+    
+    <p style="margin:5px 0; font-size:14px;">Підключити магазин до сервера:</p>
+    <select id="server-shop" style="width:98%; padding:8px; border-radius:5px; border:none; margin-bottom:10px; font-family:sans-serif;">
+        <option value="none">Без магазину</option>
+        <option value="tech">Магазин Техніки 📱</option>
+        <option value="pharmacy">Аптека 💊</option>
+        <option value="toys">Магазин Іграшок 🧸</option>
+        <option value="food">Продуктовий магазин 🛒</option>
+        <option value="clothes">Магазин Одягу 👕</option>
+    </select>
+    
+    <button class="work-btn" style="background:#607d8b;" onclick="createServer()">Створити сервер 🌐</button>`;
+    return html;
+}
+
+function createServer() {
+    let name = document.getElementById('server-name').value.trim();
+    let shop = document.getElementById('server-shop').value;
+    
+    if(!name) return alert("Введіть назву сервера!");
+    
+    let servers = getServers();
+    servers.push({ 
+        id: Date.now(), 
+        name: name, 
+        owner: player.username, 
+        shop: shop, 
+        members: [player.username],
+        houses: [],
+        customShops: []
+    });
+    
+    saveServers(servers);
+    alert("Ваш міні-сервер успішно створено!");
+    openApp('servers');
+}
+
+function renderServersUI() {
+    let servers = getServers();
+    let html = `<h3>Ефіри / Сервери 🌐</h3>
+    <button class="work-btn" style="padding:10px; margin-top:0; background:#ff9800;" onclick="openApp('editor')">Створити свій ➕</button>
+    <hr style="border-color:#444;">`;
+    
+    if(servers.length === 0) {
+        html += `<p style="text-align:center; color:#888;">Немає активних серверів</p>`;
+    } else {
+        servers.forEach(s => {
+            html += `<div class="job-item" onclick="openApp('view_server', ${s.id})">
+                <b style="color:#ff9800;">${s.name}</b> <br>
+                <span style="font-size:12px; color:#ccc;">Власник: ${s.owner} | Гравців: ${s.members.length}</span>
+            </div>`;
+        });
+    }
+    return html;
+}
+
+function renderViewServerUI(id) {
+    let servers = getServers();
+    let s = servers.find(x => x.id === id);
+    if(!s) return `<p>Сервер не знайдено або він був видалений</p>`;
+    
+    if(!s.members.includes(player.username)) {
+        s.members.push(player.username);
+        saveServers(servers);
+    }
+
+    let html = `<h3>${s.name} 🌐</h3>
+    <div style="background:#2a2a35; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <p style="margin:5px 0;"><b>Власник:</b> ${s.owner}</p>
+        <p style="margin:5px 0;"><b>Учасники:</b> ${s.members.length} чол.</p>
+    </div>`;
+
+    if(s.shop !== 'none') {
+        html += `<div style="background:#1e2a1e; padding:10px; border-radius:10px; border-left:4px solid #4CAF50;">
+            <p style="margin:0 0 10px 0;">Власник підключив магазин:</p>
+            <button class="work-btn" style="background:#4CAF50; padding:10px; margin-top:0;" onclick="openApp('shop_${s.shop}')">Відкрити магазин сервера</button>
+        </div>`;
+    }
+
+    // ВІДОБРАЖЕННЯ БУДИНКІВ
+    html += `<hr style="border-color:#444;"><h4>Будинки гравців:</h4>`;
+    if(s.houses && s.houses.length > 0) {
+        s.houses.forEach(h => html += `<div class="job-item" style="background:#3e2723;">🏠 <b>${h.name}</b> <br><span style="font-size:12px; color:#aaa;">Власник: ${h.owner}</span></div>`);
+    } else {
+        html += `<p style="font-size:12px; color:#aaa;">Будинків ще немає.</p>`;
+    }
+
+    // ВІДОБРАЖЕННЯ БІЗНЕСУ / МАГАЗИНІВ
+    html += `<h4>Бізнес гравців:</h4>`;
+    if(s.customShops && s.customShops.length > 0) {
+        s.customShops.forEach(shop => {
+            html += `<div class="job-item" style="background:#332b00; cursor:pointer;" onclick="openApp('view_custom_shop', {serverId: ${s.id}, shopId: ${shop.id}})">
+                🏪 <b>${shop.name}</b> <br><span style="font-size:12px; color:#aaa;">Власник: ${shop.owner}</span>
+            </div>`;
+        });
+    } else {
+        html += `<p style="font-size:12px; color:#aaa;">Магазинів ще немає.</p>`;
+    }
+
+    return html;
+}
+
+// --- ЛОГІКА НЕРУХОМОСТІ (НОВЕ) ---
+function renderRealEstateUI() {
+    let servers = getServers();
+    let html = `<h3>Нерухомість 🏘️</h3><p>Ваш баланс: <b style="color:#4CAF50;">${player.money}$</b></p><hr>`;
+    
+    if(servers.length === 0) return html + `<p style="color:#ff4444;">Спочатку створіть або зайдіть на сервер у додатку 'Ефіри'!</p>`;
+
+    html += `<p style="font-size:14px; margin-bottom:5px;">Купити ділянку / будинок на сервері (Ціна: <b>500$</b>)</p>`;
+    html += `<select id="re-server" style="width:100%; padding:8px; margin-bottom:10px; font-family:sans-serif;">`;
+    servers.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
+    html += `</select>`;
+    html += `<input type="text" id="re-name" placeholder="Назва вашого будинку" style="width:90%; padding:8px; margin-bottom:10px; font-family:sans-serif;">`;
+    html += `<button class="work-btn" style="background:#8d6e63; margin-top:0;" onclick="buyHouse()">Придбати ділянку 🏠</button>`;
+
+    html += `<hr style="border-color:#444;"><h4>Ваші будинки:</h4>`;
+    let hasHouses = false;
+    servers.forEach(s => {
+        if(s.houses) {
+            s.houses.forEach(h => {
+                if(h.owner === player.username) {
+                    html += `<div class="job-item">🏠 <b>${h.name}</b> <br><span style="font-size:12px; color:#aaa;">(Сервер: ${s.name})</span></div>`;
+                    hasHouses = true;
+                }
+            });
+        }
+    });
+    if(!hasHouses) html += `<p style="font-size:12px; color:#aaa;">У вас ще немає будинків.</p>`;
+
+    return html;
+}
+
+function buyHouse() {
+    let serverId = parseInt(document.getElementById('re-server').value);
+    let name = document.getElementById('re-name').value.trim();
+    if(!name) return alert("Введіть назву будинку!");
+    if(player.money < 500) return alert("Недостатньо грошей (потрібно 500$)!");
+
+    let servers = getServers();
+    let server = servers.find(s => s.id === serverId);
+    if(server) {
+        player.money -= 500;
+        server.houses.push({ owner: player.username, name: name });
+        saveServers(servers);
+        saveGame();
+        alert("Будинок успішно придбано на сервері!");
+        openApp('real_estate');
+    }
+}
+
+// --- ЛОГІКА БІЗНЕСУ ТА ІНТЕРНЕТ-МАГАЗИНУ (НОВЕ) ---
+function renderBusinessUI() {
+    let servers = getServers();
+    let html = `<h3>Бізнес & Магазини 📈</h3><p>Ваш баланс: <b style="color:#4CAF50;">${player.money}$</b></p><hr>`;
+    
+    if(servers.length === 0) return html + `<p style="color:#ff4444;">Спочатку створіть або зайдіть на сервер у додатку 'Ефіри'!</p>`;
+
+    html += `<p style="font-size:14px; margin-bottom:5px;">Відкрити свій магазин (Ліцензія: <b>1000$</b>)</p>`;
+    html += `<select id="biz-server" style="width:100%; padding:8px; margin-bottom:10px; font-family:sans-serif;">`;
+    servers.forEach(s => html += `<option value="${s.id}">${s.name}</option>`);
+    html += `</select>`;
+    html += `<input type="text" id="biz-name" placeholder="Назва вашого магазину" style="width:90%; padding:8px; margin-bottom:10px; font-family:sans-serif;">`;
+    html += `<button class="work-btn" style="background:#9e9d24; margin-top:0;" onclick="createCustomShop()">Створити 🏪</button>`;
+
+    html += `<hr style="border-color:#444;"><h4>Ваш бізнес:</h4>`;
+    let hasShops = false;
+    servers.forEach(s => {
+        if(s.customShops) {
+            s.customShops.forEach(shop => {
+                if(shop.owner === player.username) {
+                    html += `<div class="job-item" onclick="openApp('view_custom_shop', {serverId: ${s.id}, shopId: ${shop.id}})">
+                        🏪 <b>${shop.name}</b> <br>
+                        <span style="font-size:12px; color:#aaa;">(Сервер: ${s.name}) | Товарів на вітрині: ${shop.inventory.length}</span>
+                    </div>`;
+                    hasShops = true;
+                }
+            });
+        }
+    });
+    if(!hasShops) html += `<p style="font-size:12px; color:#aaa;">У вас ще немає власного бізнесу.</p>`;
+
+    return html;
+}
+
+function createCustomShop() {
+    let serverId = parseInt(document.getElementById('biz-server').value);
+    let name = document.getElementById('biz-name').value.trim();
+    if(!name) return alert("Введіть назву магазину!");
+    if(player.money < 1000) return alert("Недостатньо грошей для відкриття бізнесу (потрібно 1000$)!");
+
+    let servers = getServers();
+    let server = servers.find(s => s.id === serverId);
+    if(server) {
+        player.money -= 1000;
+        server.customShops.push({ id: Date.now(), owner: player.username, name: name, inventory: [] });
+        saveServers(servers);
+        saveGame();
+        alert("Магазин успішно створено!");
+        openApp('business');
+    }
+}
+
+function renderViewCustomShopUI(params) {
+    let servers = getServers();
+    let server = servers.find(s => s.id === params.serverId);
+    let shop = server.customShops.find(sh => sh.id === params.shopId);
+
+    let isOwner = (shop.owner === player.username);
+
+    let html = `<h3>${shop.name} 🏪</h3>
+    <p style="font-size:12px; color:#aaa;">Власник: ${shop.owner}</p><hr>`;
+
+    if (isOwner) {
+        html += `<button class="work-btn" style="background:#2196f3; padding:10px; margin-top:0; margin-bottom:15px;" onclick="openApp('wholesale', ${shop.id})">📦 Закупівля в інтернет-магазині</button>`;
+    }
+
+    html += `<h4>Вітрина:</h4>`;
+    if (shop.inventory.length === 0) {
+        html += `<p style="color:#aaa;">Полиці магазину порожні.</p>`;
+    } else {
+        shop.inventory.forEach((item, idx) => {
+            html += `<div class="job-item">
+                <div style="margin-bottom:5px;">${item.icon} ${item.name} - <b style="color:#4CAF50;">${item.price}$</b> <span style="font-size:12px; color:#ccc;">(Залишок: ${item.qty} шт)</span></div>
+                <button style="width:100%; background:#4CAF50; border:none; color:white; padding:8px; border-radius:5px; cursor:pointer; font-weight:bold;" onclick="buyFromCustomShop(${params.serverId}, ${params.shopId}, ${idx})">Купити</button>
+            </div>`;
+        });
+    }
+    return html;
+}
+
+// ОПТОВІ ТОВАРИ (Інтернет-магазин)
+const wholesaleItems = [
+    { name: "Ящик Капібар (5шт)", icon: "🦦", type: "toy", value: 0, wholesalePrice: 1000, qty: 5, suggestedPrice: 250 },
+    { name: "Оптова Піца (10шт)", icon: "🍕", type: "food", value: 30, wholesalePrice: 100, qty: 10, suggestedPrice: 15 },
+    { name: "Оптові Смартфони (3шт)", icon: "📱", type: "tech", value: 0, wholesalePrice: 1500, qty: 3, suggestedPrice: 600 },
+    { name: "Ящик Аптечок (5шт)", icon: "🩹", type: "med", value: 80, wholesalePrice: 200, qty: 5, suggestedPrice: 50 },
+    { name: "Мішок Бургерів (20шт)", icon: "🍔", type: "food", value: 25, wholesalePrice: 180, qty: 20, suggestedPrice: 12 }
+];
+
+function renderWholesaleUI(shopId) {
+    let html = `<h3>Інтернет-Закупівля 📦</h3><p>Ваш баланс: <b style="color:#4CAF50;">${player.money}$</b></p><hr>`;
+    html += `<p style="font-size:12px; color:#aaa;">Закупіть товар оптом (ціна за партію), та встановіть власну роздрібну ціну за штуку.</p>`;
+
+    wholesaleItems.forEach((item, idx) => {
+        html += `<div class="job-item" style="background:#1e1e24; border:1px solid #555;">
+            <b style="font-size:16px;">${item.icon} ${item.name}</b> <br>
+            <span style="font-size:12px; color:#ff9800;">Оптова ціна: ${item.wholesalePrice}$</span> <br>
+            
+            <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <input type="number" id="ws-price-${idx}" value="${item.suggestedPrice}" style="width:50px; padding:5px; font-family:sans-serif;"> $ за 1 шт.
+                </div>
+                <button style="background:#2196f3; border:none; color:white; padding:8px 15px; border-radius:5px; cursor:pointer; font-weight:bold;" onclick="buyWholesale(${shopId}, ${idx})">Закупити</button>
+            </div>
+        </div>`;
+    });
+    return html;
+}
+
+function buyWholesale(shopId, itemIdx) {
+    let item = wholesaleItems[itemIdx];
+    let retailPrice = parseInt(document.getElementById(`ws-price-${itemIdx}`).value);
+
+    if (player.money < item.wholesalePrice) return alert("Недостатньо грошей для закупівлі оптом!");
+    if (retailPrice < 1) return alert("Встановіть адекватну ціну продажу!");
+
+    player.money -= item.wholesalePrice;
+
+    let servers = getServers();
+    let server = null;
+    let shop = null;
+    for(let s of servers) {
+        let sh = s.customShops.find(x => x.id === shopId);
+        if(sh) { server = s; shop = sh; break; }
+    }
+
+    if(shop) {
+        let baseName = item.name.replace(/Оптова |Ящик |Оптові |Мішок | \(.+\)/g, '').trim(); 
+        shop.inventory.push({
+            name: baseName, icon: item.icon, type: item.type, value: item.value,
+            price: retailPrice, qty: item.qty
+        });
+        saveServers(servers);
+        saveGame();
+        alert("Товар успішно закуплено та виставлено на полиці вашого магазину!");
+        openApp('view_custom_shop', {serverId: server.id, shopId: shop.id});
+    }
+}
+
+function buyFromCustomShop(serverId, shopId, itemIdx) {
+    let servers = getServers();
+    let server = servers.find(s => s.id === serverId);
+    let shop = server.customShops.find(sh => sh.id === shopId);
+    let item = shop.inventory[itemIdx];
+
+    if (player.money < item.price) return alert("Недостатньо грошей!");
+
+    player.money -= item.price;
+    item.qty -= 1;
+
+    player.inventory.push({
+        name: item.name, icon: item.icon, type: item.type, value: item.value, id: Date.now()
+    });
+
+    if (shop.owner === player.username) {
+        player.money += item.price; 
+    } else {
+        let ownerDataStr = localStorage.getItem('user_' + shop.owner);
+        if(ownerDataStr) {
+            let ownerData = JSON.parse(ownerDataStr);
+            ownerData.stats.money += item.price;
+            localStorage.setItem('user_' + shop.owner, JSON.stringify(ownerData));
+        }
+    }
+
+    if (item.qty <= 0) {
+        shop.inventory.splice(itemIdx, 1);
+    }
+
+    saveServers(servers);
+    saveGame();
+    alert(`Ви купили ${item.name} за ${item.price}$!`);
+    openApp('view_custom_shop', {serverId: serverId, shopId: shopId});
+}
+
+function callTaxi() {
+    if (player.money >= 20) {
+        player.money -= 20;
+        player.x = player.homePos.x;
+        player.y = player.homePos.y;
+        alert("Таксі привезло вас додому!");
+        closeApp();
+    } else { alert("Таксі коштує 20$!"); }
+}
+
+// --- ЛОГІКА БРАУЗЕРА ТА CHATGPT ---
+function renderBrowserUI() {
+    return `<h3>Браузер 🌍</h3>
+    <div style="display:flex; margin-bottom:5px;">
+        <input type="text" id="browser-url" value="https://uk.wikipedia.org/wiki/Головна_сторінка" placeholder="Введіть URL..." style="flex:1; padding:8px; border-radius:5px 0 0 5px; border:none; font-family:sans-serif; color: black; outline:none;">
+        <button onclick="loadBrowserUrl()" style="background:#00bcd4; color:white; border:none; padding:8px 15px; border-radius:0 5px 5px 0; cursor:pointer; font-weight:bold;">Go</button>
+    </div>
+    <iframe id="browser-frame" src="https://uk.wikipedia.org/wiki/Головна_сторінка" style="width:100%; height:320px; border:none; border-radius:5px; background:white;"></iframe>
+    <p style="font-size:10px; color:#aaa; text-align:center; margin-top:5px;">Деякі сайти можуть блокувати відображення (захист X-Frame).</p>`;
+}
+
+function loadBrowserUrl() {
+    let url = document.getElementById('browser-url').value.trim();
+    if(!url.startsWith('http')) url = 'https://' + url;
+    document.getElementById('browser-frame').src = url;
+}
+
+function renderChatGPTUI() {
+    if(!player.chatGptHistory) player.chatGptHistory = [{role: 'ai', text: 'Привіт! Я твій вбудований ШІ-помічник. Чим можу допомогти тобі в цьому місті?'}];
+    
+    let html = `<h3>ChatGPT 🤖</h3>
+    <div id="chatgpt-messages" style="height:280px; overflow-y:auto; background:#2a2a35; padding:10px; border-radius:10px; margin-bottom:10px; display:flex; flex-direction:column; gap:8px;">`;
+    
+    player.chatGptHistory.forEach(msg => {
+        if(msg.role === 'user') {
+            html += `<div style="align-self:flex-end; background:#10a37f; color:white; padding:8px 12px; border-radius:15px 15px 0 15px; max-width:85%; font-size:14px; white-space:pre-wrap; font-family:sans-serif; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${msg.text}</div>`;
+        } else {
+            html += `<div style="align-self:flex-start; background:#3a3a48; color:white; padding:8px 12px; border-radius:15px 15px 15px 0; max-width:85%; font-size:14px; white-space:pre-wrap; font-family:sans-serif; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${msg.text}</div>`;
+        }
+    });
+
+    html += `</div>
+    <div style="display:flex;">
+        <input type="text" id="chatgpt-input" placeholder="Запитайте щось про гру..." style="flex:1; padding:10px; border-radius:10px 0 0 10px; border:none; font-family:sans-serif; color: black; outline:none;" onkeypress="if(event.key === 'Enter') sendChatGptMsg()">
+        <button onclick="sendChatGptMsg()" style="background:#10a37f; color:white; border:none; padding:10px 15px; border-radius:0 10px 10px 0; cursor:pointer; font-weight:bold;">➤</button>
+    </div>`;
+    return html;
+}
+
+function sendChatGptMsg() {
+    let input = document.getElementById('chatgpt-input');
+    let text = input.value.trim();
+    if(!text) return;
+
+    if(!player.chatGptHistory) player.chatGptHistory = [];
+    player.chatGptHistory.push({role: 'user', text: text});
+    
+    let lowerText = text.toLowerCase();
+    let aiResponse = "Це цікаве питання! Але як офлайн ШІ у цій грі, мої знання трохи обмежені. Запитай мене щось про гру: як заробити гроші, що робити з голодом, або як підняти настрій!";
+    
+    if(lowerText.includes('привіт') || lowerText.includes('здоров')) aiResponse = "Привіт! Радий бачити тебе в City Life Clicker. Чим можу допомогти?";
+    else if(lowerText.includes('справи') || lowerText.includes('як ти')) aiResponse = "Все чудово! Мої сервери працюють на повну потужність. А як твої показники голоду та сну?";
+    else if(lowerText.includes('гроші') || lowerText.includes('заробити') || lowerText.includes('робота')) aiResponse = "Щоб заробити гроші, відкрий додаток 'Робота' (💼) і влаштуйся на роботу! Найбільше платить IT-Розробник, але там треба багато працювати (клікати). Також тепер ти можеш відкрити свій 'Бізнес' і продавати товари іншим гравцям!";
+    else if(lowerText.includes('їжа') || lowerText.includes('голод') || lowerText.includes('їсти') || lowerText.includes('голодний')) aiResponse = "Якщо ти голодний, сходи в Продуктовий магазин (🛒) або замов їжу. Або ще краще – приготуй щось з інгредієнтів удома на Кухні!";
+    else if(lowerText.includes('сон') || lowerText.includes('спати') || lowerText.includes('втомився')) aiResponse = "Йди додому (🏠) і лягай спати в ліжко. Це безкоштовно і відновлює сон до 100%. Або купи вітаміни в Аптеці (💊).";
+    else if(lowerText.includes('настрій') || lowerText.includes('сумно')) aiResponse = "Сходи в Нічний Клуб (🏢) і купи коктейль, або пограйся з іграшками (🧸) з магазину. Це швидко підніме настрій!";
+    else if(lowerText.includes('хто ти') || lowerText.includes('що ти таке')) aiResponse = "Я ігровий ChatGPT – твій віртуальний помічник. Я тут, щоб скласти тобі компанію та давати підказки по грі!";
+    else if(lowerText.includes('жарт') || lowerText.includes('анекдот')) aiResponse = "Чому комп'ютер пішов до лікаря? Бо у нього був вірус! 🦠😆";
+    else if(lowerText.includes('капібара')) aiResponse = "Капібари – це найкращі тварини! До речі, в інтернет-магазині для бізнесу тепер можна замовити цілий ящик плюшевих капібар для перепродажу!";
+    else if(text.match(/[\d\+\-\*\/\(\)\.]+/g) && (lowerText.includes('скільки') || lowerText.includes('порахуй'))) {
+         try {
+             let mathExpr = text.match(/[\d\+\-\*\/\(\)\.]+/g).join('');
+             if(mathExpr) {
+                 let result = eval(mathExpr);
+                 aiResponse = `Мій процесор порахував це: ${mathExpr} = ${result}`;
+             }
+         } catch(e) { /* ignore */ }
+    }
+
+    player.chatGptHistory.push({role: 'ai', text: aiResponse});
+    saveGame();
+    
+    openApp('chatgpt'); 
+}
+
+function updateHomeApps() {
+    const workAppContainer = document.getElementById('active-work-app');
+    if (player.jobId) {
+        const job = workMiniGames[player.jobId];
+        workAppContainer.style.display = 'block';
+        workAppContainer.innerHTML = `<div class="app-icon" style="background:#0066cc;" onclick="openApp('work_minigame')"><span>${job.icon}</span>Праця</div>`;
+    } else { workAppContainer.style.display = 'none'; }
+}
+
+function openApp(app, param = null) {
+    document.getElementById('phone-home').style.display = 'none';
+    document.getElementById('phone-screen').style.display = 'block';
+    const content = document.getElementById('app-content');
+    
+    if (app === 'jobs') {
+        let html = `<h3>Вакансії</h3>`;
+        for (const [id, data] of Object.entries(workMiniGames)) {
+            html += `<div class="job-item" onclick="takeJob('${id}')">${data.icon} ${data.name}</div>`;
+        }
+        content.innerHTML = html;
+    } else if (app === 'work_minigame') {
+        const job = workMiniGames[player.jobId];
+        content.innerHTML = `<h3>${job.name}</h3><button class="work-btn" onclick="doWorkClick()">${job.actionName}</button><div id="work-stats">Зароблено: ${player.clicksDone * job.pay}$</div>`;
+    } else if (app === 'bank') content.innerHTML = `<h3>Банк 🏦</h3> Баланс: <b style="color:#4CAF50;">${player.money}$</b>`;
+    else if (app === 'profile') content.innerHTML = `<h3>Профіль 👤</h3> Робота: ${player.jobName}<br>Гроші: ${player.money}$<br>Номер тел: ${player.phoneNumber || "Немає"}`;
+    else if (app === 'shop_tech') content.innerHTML = renderShopUI('tech');
+    else if (app === 'shop_pharmacy') content.innerHTML = renderShopUI('pharmacy');
+    else if (app === 'shop_toys') content.innerHTML = renderShopUI('toys');
+    else if (app === 'shop_food') content.innerHTML = renderShopUI('food');
+    else if (app === 'shop_clothes') content.innerHTML = renderShopUI('clothes');
+    else if (app === 'backpack') content.innerHTML = renderBackpackUI();
+    else if (app === 'taxi') content.innerHTML = `<h3>Таксі 🚕</h3><button class="work-btn" onclick="callTaxi()">Додому (20$)</button>`;
+    else if (app === 'news') content.innerHTML = `<h3>Новини 📰</h3> У місті відкрилися можливості нерухомості та створення свого бізнесу на серверах!`;
+    
+    else if (app === 'mail') content.innerHTML = renderMailUI();
+    else if (app === 'compose_mail') content.innerHTML = renderComposeMailUI();
+    else if (app === 'view_mail') content.innerHTML = renderViewMailUI(param);
+    
+    else if (app === 'telegram') content.innerHTML = renderTelegramUI();
+    else if (app === 'compose_tg') content.innerHTML = renderComposeTgUI();
+    
+    else if (app === 'servers') content.innerHTML = renderServersUI();
+    else if (app === 'editor') content.innerHTML = renderEditorUI();
+    else if (app === 'view_server') content.innerHTML = renderViewServerUI(param);
+    
+    // Нові функції
+    else if (app === 'real_estate') content.innerHTML = renderRealEstateUI();
+    else if (app === 'business') content.innerHTML = renderBusinessUI();
+    else if (app === 'view_custom_shop') content.innerHTML = renderViewCustomShopUI(param);
+    else if (app === 'wholesale') content.innerHTML = renderWholesaleUI(param);
+
+    else if (app === 'browser') content.innerHTML = renderBrowserUI();
+    else if (app === 'chatgpt') {
+        content.innerHTML = renderChatGPTUI();
+        setTimeout(() => {
+            let chatBox = document.getElementById('chatgpt-messages');
+            if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+        }, 10);
+        setTimeout(() => {
+            let input = document.getElementById('chatgpt-input');
+            if(input) input.focus();
+        }, 20);
+    }
+}
+
+function closeApp() { updateHomeApps(); document.getElementById('phone-home').style.display = 'grid'; document.getElementById('phone-screen').style.display = 'none'; }
+function takeJob(jobId) { player.jobId = jobId; player.jobName = workMiniGames[jobId].name; player.clicksDone = 0; closeApp(); }
+function doWorkClick() { const job = workMiniGames[player.jobId]; player.money += job.pay; player.clicksDone++; openApp('work_minigame'); }
+
+gameLoop();
+</script>
+</body>
+</html>
